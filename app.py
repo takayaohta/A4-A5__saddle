@@ -43,24 +43,41 @@ def impose(input_path, output_path=None):
         raise ValueError(f"ページ数({total_pages})が4の倍数ではありません。")
 
     first_page = reader.pages[0]
-    a5_width = float(first_page.mediabox.width)
-    a5_height = float(first_page.mediabox.height)
+    page_width = float(first_page.mediabox.width)
+    page_height = float(first_page.mediabox.height)
 
-    a4_width = a5_width * 2
-    a4_height = a5_height
+    # A4横サイズ (pt)
+    A4_LANDSCAPE_W = 841.89
+    A4_LANDSCAPE_H = 595.28
+
+    # 2ページ並べたサイズ
+    spread_width = page_width * 2
+    spread_height = page_height
+
+    # A4に収まるスケール率を計算
+    scale = min(A4_LANDSCAPE_W / spread_width, A4_LANDSCAPE_H / spread_height, 1.0)
+
+    # 出力ページサイズ（スケール後）
+    out_width = spread_width * scale
+    out_height = spread_height * scale
+    scaled_page_width = page_width * scale
 
     pairs = get_imposition_order(total_pages)
     writer = PdfWriter()
 
     for pair in pairs:
-        new_page = PageObject.create_blank_page(width=a4_width, height=a4_height)
+        new_page = PageObject.create_blank_page(width=out_width, height=out_height)
 
         left_page = reader.pages[pair["left"] - 1]
-        new_page.merge_transformed_page(left_page, Transformation().translate(0, 0))
+        new_page.merge_transformed_page(
+            left_page,
+            Transformation().scale(scale, scale).translate(0, 0),
+        )
 
         right_page = reader.pages[pair["right"] - 1]
         new_page.merge_transformed_page(
-            right_page, Transformation().translate(a5_width, 0)
+            right_page,
+            Transformation().scale(scale, scale).translate(scaled_page_width, 0),
         )
 
         writer.add_page(new_page)
@@ -124,6 +141,11 @@ def _analyze_file():
         is_valid = total_pages % 4 == 0
         imposition_order = get_imposition_order(total_pages) if is_valid else []
 
+        # A4に収まるかチェック
+        A4_LANDSCAPE_W = 841.89
+        A4_LANDSCAPE_H = 595.28
+        scale = min(A4_LANDSCAPE_W / (width_pt * 2), A4_LANDSCAPE_H / height_pt, 1.0)
+
         return jsonify(
             {
                 "filename": Path(_selected_file_path).name,
@@ -136,6 +158,8 @@ def _analyze_file():
                 "is_valid": is_valid,
                 "imposition_order": imposition_order,
                 "sheets": total_pages // 4 if is_valid else 0,
+                "scale": round(scale * 100, 1),
+                "needs_scaling": scale < 1.0,
             }
         )
     except Exception as e:

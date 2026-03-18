@@ -719,13 +719,20 @@
       document.getElementById('filePath').textContent = dirPath;
 
       document.getElementById('pageCount').textContent = `${data.total_pages} ページ`;
-      document.getElementById('pageSize').textContent =
-        `${data.page_width_mm} × ${data.page_height_mm} mm`;
+
+      let sizeText = `${data.page_width_mm} × ${data.page_height_mm} mm`;
+      if (data.needs_scaling) {
+        sizeText += ` → ${data.scale}% に縮小`;
+      }
+      document.getElementById('pageSize').textContent = sizeText;
 
       const statusEl = document.getElementById('validationStatus');
       if (data.is_valid) {
-        statusEl.innerHTML =
-          `<span class="validation-badge valid">✓ 4の倍数（${data.sheets}枚分）</span>`;
+        let badgeHtml = `<span class="validation-badge valid">✓ 4の倍数（${data.sheets}枚分）</span>`;
+        if (data.needs_scaling) {
+          badgeHtml += ` <span class="validation-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;">⚡ A4に自動縮小</span>`;
+        }
+        statusEl.innerHTML = badgeHtml;
       } else {
         statusEl.innerHTML =
           `<span class="validation-badge invalid">✗ 4の倍数ではありません</span>`;
