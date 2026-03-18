@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中綴じ面付け</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a14;
+      --bg-secondary: #12121f;
+      --bg-card: rgba(255, 255, 255, 0.04);
+      --bg-card-hover: rgba(255, 255, 255, 0.07);
+      --bg-glass: rgba(255, 255, 255, 0.06);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(120, 140, 255, 0.3);
+      --text-primary: #e8e8f0;
+      --text-secondary: #8888a0;
+      --text-muted: #555568;
+      --accent: #6c7bff;
+      --accent-glow: rgba(108, 123, 255, 0.25);
+      --success: #4ade80;
+      --success-glow: rgba(74, 222, 128, 0.2);
+      --error: #f87171;
+      --error-glow: rgba(248, 113, 113, 0.15);
+      --warning: #fbbf24;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 背景グラデーション */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -40%;
+      left: -20%;
+      width: 80%;
+      height: 80%;
+      background: radial-gradient(circle, rgba(108, 123, 255, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -30%;
+      right: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ヘッダー */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* ドロップゾーン */
+    .drop-zone {
+      border: 2px dashed var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 56px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(108, 123, 255, 0.04), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+
+    .drop-zone:hover::before,
+    .drop-zone.drag-over::before {
+      opacity: 1;
+    }
+
+    .drop-zone-icon {
+      font-size: 2.4rem;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    .drop-zone-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    .drop-zone-text strong {
+      color: var(--text-primary);
+    }
+
+    .drop-zone input[type="file"] {
+      display: none;
+    }
+
+    /* ファイル情報 */
+    .file-info {
+      display: none;
+      margin-top: 24px;
+      animation: slideUp 0.4s ease;
+    }
+
+    .file-info.show {
+      display: block;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .info-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .info-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .info-card-header h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .info-card-header .icon {
+      font-size: 1.1rem;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.85rem;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: var(--text-secondary);
+    }
+
+    .info-value {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .info-path {
+      font-size: 0.72rem;
+      word-break: break-all;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* バリデーション */
+    .validation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .validation-badge.valid {
+      background: var(--success-glow);
+      color: var(--success);
+    }
+
+    .validation-badge.invalid {
+      background: var(--error-glow);
+      color: var(--error);
+    }
+
+    /* エラー表示 */
+    .error-message {
+      display: none;
+      background: var(--error-glow);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: var(--error);
+      animation: shake 0.4s ease;
+    }
+
+    .error-message.show {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    /* 面付け順プレビュー */
+    .preview-section {
+      display: none;
+      margin-top: 24px;
+      animation: slideUp 0.5s ease;
+    }
+
+    .preview-section.show {
+      display: block;
+    }
+
+    .preview-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sheet-group {
+      margin-bottom: 16px;
+    }
+
+    .sheet-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .sheet-card {
+      display: flex;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      margin-bottom: 8px;
+      transition: all var(--transition);
+    }
+
+    .sheet-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+    }
+
+    .sheet-side {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-right: 16px;
+      min-width: 48px;
+      text-align: center;
+    }
+
+    .sheet-side.front {
+      background: rgba(108, 123, 255, 0.15);
+      color: var(--accent);
+    }
+
+    .sheet-side.back {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+    }
+
+    .page-spread {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .page-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 48px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+      position: relative;
+    }
+
+    .page-box::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -1px;
+      right: 3px;
+      font-size: 0.55rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .page-spread-divider {
+      width: 2px;
+      height: 32px;
+      background: var(--border-subtle);
+      border-radius: 1px;
+    }
+
+    .page-position {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* ボタン */
+    .actions {
+      display: none;
+      margin-top: 28px;
+      animation: slideUp 0.5s ease;
+    }
+
+    .actions.show {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: white;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 30px var(--accent-glow);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+    }
+
+    /* プログレス */
+    .progress-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 10, 20, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-overlay.show {
+      display: flex;
+    }
+
+    .progress-content {
+      text-align: center;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border-subtle);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    /* 完了メッセージ */
+    .result-section {
+      display: none;
+      margin-top: 24px;
+      animation: slideUp 0.5s ease;
+    }
+
+    .result-section.show {
+      display: block;
+    }
+
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(74, 222, 128, 0.15);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+    }
+
+    .result-icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+
+    .result-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--success);
+      margin-bottom: 8px;
+    }
+
+    .result-path {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      word-break: break-all;
+      margin-bottom: 20px;
+      padding: 10px 16px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      font-family: 'SF Mono', 'Menlo', monospace;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* リセット */
+    .reset-btn {
+      display: none;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .reset-btn.show {
+      display: block;
+    }
+
+    .reset-link {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color var(--transition);
+    }
+
+    .reset-link:hover {
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>中綴じ面付け</h1>
+      <p>A5 単ページ PDF → A4 横 面付け済み PDF</p>
+    </div>
+
+    <!-- ファイル選択ゾーン -->
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">📄</div>
+      <div class="drop-zone-text">
+        クリックして<strong>PDFファイルを選択</strong>
+      </div>
+    </div>
+
+    <!-- エラー -->
+    <div class="error-message" id="errorMessage">
+      <span>⚠️</span>
+      <span id="errorText"></span>
+    </div>
+
+    <!-- ファイル情報 -->
+    <div class="file-info" id="fileInfo">
+      <div class="info-card">
+        <div class="info-card-header">
+          <span class="icon">📋</span>
+          <h3>ファイル情報</h3>
+        </div>
+        <div class="info-row">
+          <span class="info-label">ファイル名</span>
+          <span class="info-value" id="fileName">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">場所</span>
+          <span class="info-value info-path" id="filePath">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">ページ数</span>
+          <span class="info-value" id="pageCount">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">ページサイズ</span>
+          <span class="info-value" id="pageSize">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">ステータス</span>
+          <span class="info-value" id="validationStatus">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 面付け順プレビュー -->
+    <div class="preview-section" id="previewSection">
+      <div class="preview-title">
+        <span>📖</span> 面付け順プレビュー
+      </div>
+      <div id="previewContent"></div>
+    </div>
+
+    <!-- アクション -->
+    <div class="actions" id="actions">
+      <button class="btn btn-primary" id="imposeBtn" onclick="runImpose()">
+        🖨️ 面付け実行
+      </button>
+    </div>
+
+    <!-- 完了 -->
+    <div class="result-section" id="resultSection">
+      <div class="result-card">
+        <div class="result-icon">✅</div>
+        <div class="result-title">面付け完了</div>
+        <div class="result-path" id="outputPath"></div>
+        <div class="result-actions">
+          <button class="btn btn-primary" onclick="revealInFinder()">
+            📂 Finder で表示
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- リセット -->
+    <div class="reset-btn" id="resetBtn">
+      <a class="reset-link" onclick="resetAll()">↩ 別のファイルを処理する</a>
+    </div>
+  </div>
+
+  <!-- プログレスオーバーレイ -->
+  <div class="progress-overlay" id="progressOverlay">
+    <div class="progress-content">
+      <div class="spinner"></div>
+      <div class="progress-text" id="progressText">面付け処理中…</div>
+    </div>
+  </div>
+
+  <script>
+    // 状態
+    let currentOutputPath = '';
+
+    // DOM
+    const dropZone = document.getElementById('dropZone');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const fileInfo = document.getElementById('fileInfo');
+    const previewSection = document.getElementById('previewSection');
+    const previewContent = document.getElementById('previewContent');
+    const actions = document.getElementById('actions');
+    const imposeBtn = document.getElementById('imposeBtn');
+    const resultSection = document.getElementById('resultSection');
+    const outputPathEl = document.getElementById('outputPath');
+    const progressOverlay = document.getElementById('progressOverlay');
+    const progressText = document.getElementById('progressText');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // クリックでネイティブファイル選択ダイアログを開く
+    dropZone.addEventListener('click', () => selectFile());
+
+    async function selectFile() {
+      hideAll();
+      progressText.textContent = 'ファイル選択ダイアログを開いています…';
+      progressOverlay.classList.add('show');
+
+      try {
+        const res = await fetch('/api/select-file', { method: 'POST' });
+        const data = await res.json();
+
+        progressOverlay.classList.remove('show');
+
+        if (!res.ok) {
+          if (data.error !== 'ファイル選択がキャンセルされました') {
+            showError(data.error || '不明なエラーが発生しました。');
+          }
+          return;
+        }
+
+        displayFileInfo(data);
+      } catch (err) {
+        progressOverlay.classList.remove('show');
+        showError('サーバーとの通信に失敗しました。');
+        console.error(err);
+      }
+    }
+
+    function displayFileInfo(data) {
+      document.getElementById('fileName').textContent = data.filename;
+
+      // ファイルパスからディレクトリ部分だけ表示
+      const dirPath = data.filepath.substring(0, data.filepath.lastIndexOf('/'));
+      document.getElementById('filePath').textContent = dirPath;
+
+      document.getElementById('pageCount').textContent = `${data.total_pages} ページ`;
+      document.getElementById('pageSize').textContent =
+        `${data.page_width_mm} × ${data.page_height_mm} mm`;
+
+      const statusEl = document.getElementById('validationStatus');
+      if (data.is_valid) {
+        statusEl.innerHTML =
+          `<span class="validation-badge valid">✓ 4の倍数（${data.sheets}枚分）</span>`;
+      } else {
+        statusEl.innerHTML =
+          `<span class="validation-badge invalid">✗ 4の倍数ではありません</span>`;
+      }
+
+      fileInfo.classList.add('show');
+
+      if (data.is_valid) {
+        renderPreview(data.imposition_order, data.sheets);
+        previewSection.classList.add('show');
+        actions.classList.add('show');
+      } else {
+        showError(
+          `ページ数（${data.total_pages}）が4の倍数ではありません。中綴じには4の倍数のページ数が必要です。`
+        );
+      }
+    }
+
+    function renderPreview(order, sheets) {
+      let html = '';
+
+      for (let s = 0; s < sheets; s++) {
+        html += `<div class="sheet-group">`;
+        html += `<div class="sheet-label">${s + 1}枚目</div>`;
+
+        for (let i = 0; i < 2; i++) {
+          const idx = s * 2 + i;
+          const pair = order[idx];
+          const isFront = pair.side === 'おもて';
+
+          html += `
+            <div class="sheet-card">
+              <span class="sheet-side ${isFront ? 'front' : 'back'}">
+                ${pair.side}
+              </span>
+              <div class="page-spread">
+                <div class="page-box" data-label="左">${pair.left}</div>
+                <div class="page-spread-divider"></div>
+                <div class="page-box" data-label="右">${pair.right}</div>
+              </div>
+            </div>`;
+        }
+
+        html += `</div>`;
+      }
+
+      previewContent.innerHTML = html;
+    }
+
+    async function runImpose() {
+      imposeBtn.disabled = true;
+      progressText.textContent = '面付け処理中…';
+      progressOverlay.classList.add('show');
+
+      try {
+        const res = await fetch('/api/impose', { method: 'POST' });
+        const data = await res.json();
+
+        progressOverlay.classList.remove('show');
+
+        if (!res.ok) {
+          showError(data.error || '面付け処理に失敗しました。');
+          imposeBtn.disabled = false;
+          return;
+        }
+
+        currentOutputPath = data.output_path;
+        outputPathEl.textContent = data.output_path;
+
+        // アクション非表示 → 結果表示
+        actions.classList.remove('show');
+        resultSection.classList.add('show');
+        resetBtn.classList.add('show');
+      } catch (err) {
+        progressOverlay.classList.remove('show');
+        showError('サーバーとの通信に失敗しました。');
+        imposeBtn.disabled = false;
+        console.error(err);
+      }
+    }
+
+    async function revealInFinder() {
+      try {
+        await fetch('/api/reveal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: currentOutputPath }),
+        });
+      } catch (err) {
+        console.error('Finder表示に失敗:', err);
+      }
+    }
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorMessage.classList.add('show');
+    }
+
+    function hideAll() {
+      errorMessage.classList.remove('show');
+      fileInfo.classList.remove('show');
+      previewSection.classList.remove('show');
+      actions.classList.remove('show');
+      resultSection.classList.remove('show');
+      resetBtn.classList.remove('show');
+      imposeBtn.disabled = false;
+      currentOutputPath = '';
+    }
+
+    function resetAll() {
+      hideAll();
+    }
+  </script>
+</body>
+</html>
