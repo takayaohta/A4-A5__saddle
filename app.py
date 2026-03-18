@@ -67,7 +67,7 @@ def impose(input_path, output_path=None):
 
     if output_path is None:
         input_p = Path(input_path)
-        output_path = str(input_p.parent / f"{input_p.stem}_imposed.pdf")
+        output_path = str(input_p.parent / f"{input_p.stem}_saddle.pdf")
 
     with open(output_path, "wb") as f:
         writer.write(f)
