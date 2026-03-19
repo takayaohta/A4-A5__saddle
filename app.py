@@ -206,6 +206,6 @@ def reveal_in_finder():
 if __name__ == "__main__":
     print("=" * 50)
     print("  中綴じ面付け GUIアプリ")
-    print("  http://localhost:5000 をブラウザで開いてください")
+    print("  http://localhost:8080 をブラウザで開いてください")
     print("=" * 50)
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=8080)
